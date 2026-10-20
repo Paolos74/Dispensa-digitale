@@ -19,6 +19,14 @@ class ProductAPI {
         nutriscore: 'A',
         defaultPrice: 1.15
       },
+      '8076802085738': {
+        name: 'Fusilli n.98',
+        brand: 'Barilla',
+        category: 'Pasta & Cereali',
+        quantityStr: '500g',
+        nutriscore: 'A',
+        defaultPrice: 1.15
+      },
       '8005110000000': {
         name: 'Passata di Pomodoro Classica',
         brand: 'Mutti',
@@ -28,7 +36,7 @@ class ProductAPI {
         defaultPrice: 1.49
       },
       '8005110170109': {
-        name: 'Polpa di Pomodoro in Finissimi Pezzi',
+        name: 'Polpa di Pomodoro Finissimi Pezzi',
         brand: 'Mutti',
         category: 'Conserve & Sughi',
         quantityStr: '3x400g',
@@ -83,6 +91,14 @@ class ProductAPI {
         nutriscore: 'D',
         defaultPrice: 2.89
       },
+      '8076809506694': {
+        name: 'Biscotti Macine',
+        brand: 'Mulino Bianco',
+        category: 'Snack & Dolci',
+        quantityStr: '800g',
+        nutriscore: 'C',
+        defaultPrice: 2.89
+      },
       '8001210003001': {
         name: 'Acqua Minerale Naturale',
         brand: 'San Benedetto',
@@ -98,11 +114,27 @@ class ProductAPI {
         quantityStr: '450g',
         nutriscore: 'A',
         defaultPrice: 2.49
+      },
+      '8004030040003': {
+        name: 'Yogurt Greco Bianco 0%',
+        brand: 'Fage',
+        category: 'Freschi & Latticini',
+        quantityStr: '170g',
+        nutriscore: 'A',
+        defaultPrice: 1.59
+      },
+      '8000430000008': {
+        name: 'Riso Carnaroli',
+        brand: 'Scotti',
+        category: 'Pasta & Cereali',
+        quantityStr: '1kg',
+        nutriscore: 'A',
+        defaultPrice: 2.99
       }
     };
   }
 
-  // Look up product by barcode: 1) local DB cache, 2) Open Food Facts API, 3) fallback dictionary
+  // Look up product by barcode
   async lookup(barcode) {
     if (!barcode) return null;
     const cleanBarcode = barcode.trim();
@@ -117,43 +149,7 @@ class ProductAPI {
       console.warn('Cache lookup error:', e);
     }
 
-    // 2. Try Open Food Facts API (if online)
-    if (navigator.onLine) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3500);
-
-        const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(cleanBarcode)}.json`;
-        const res = await fetch(url, { signal: controller });
-        clearTimeout(timeout);
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.status === 1 && data.product) {
-            const prod = data.product;
-            const mapped = {
-              barcode: cleanBarcode,
-              name: prod.product_name_it || prod.product_name || prod.generic_name_it || prod.generic_name || `Prodotto ${cleanBarcode}`,
-              brand: prod.brands || '',
-              category: this.mapCategory(prod.categories_tags, prod.categories),
-              quantityStr: prod.quantity || '1 pz',
-              image: prod.image_front_small_url || prod.image_url || '',
-              nutriscore: (prod.nutriscore_grade || '').toUpperCase(),
-              defaultPrice: 0,
-              source: 'openfoodfacts'
-            };
-
-            // Save to IndexedDB cache
-            window.dispensaDB.put('barcodeCache', mapped).catch(() => {});
-            return mapped;
-          }
-        }
-      } catch (err) {
-        console.log('OFF API error or timeout, falling back to local catalog:', err.message);
-      }
-    }
-
-    // 3. Fallback to local built-in dictionary
+    // 2. Check built-in popular Italian catalog
     if (this.localCatalog[cleanBarcode]) {
       const item = {
         barcode: cleanBarcode,
@@ -164,16 +160,61 @@ class ProductAPI {
       return item;
     }
 
-    // 4. Default placeholder for unknown barcode
+    // 3. Try Open Food Facts API (v2 and v0 fallback)
+    if (navigator.onLine) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3200);
+
+        // Try v2 first
+        let url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(cleanBarcode)}.json`;
+        let res = await fetch(url, { signal: controller }).catch(() => null);
+
+        // If failed or 404, try v0 endpoint
+        if (!res || !res.ok) {
+          url = `https://it.openfoodfacts.org/api/v0/product/${encodeURIComponent(cleanBarcode)}.json`;
+          res = await fetch(url, { signal: controller }).catch(() => null);
+        }
+
+        clearTimeout(timeout);
+
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && (data.status === 1 || data.product)) {
+            const prod = data.product;
+            const mapped = {
+              barcode: cleanBarcode,
+              name: prod.product_name_it || prod.product_name || prod.generic_name_it || prod.generic_name || '',
+              brand: prod.brands || '',
+              category: this.mapCategory(prod.categories_tags, prod.categories),
+              quantityStr: prod.quantity || '1 pz',
+              image: prod.image_front_small_url || prod.image_url || '',
+              nutriscore: (prod.nutriscore_grade || '').toUpperCase(),
+              defaultPrice: 1.50,
+              source: 'openfoodfacts'
+            };
+
+            if (mapped.name) {
+              window.dispensaDB.put('barcodeCache', mapped).catch(() => {});
+              return mapped;
+            }
+          }
+        }
+      } catch (err) {
+        console.log('OFF API error or timeout:', err.message);
+      }
+    }
+
+    // 4. Unknown barcode
     return {
       barcode: cleanBarcode,
-      name: `Prodotto ${cleanBarcode.substring(cleanBarcode.length - 4)}`,
+      name: '',
       brand: '',
       category: 'Altro',
       quantityStr: '1 pz',
       image: '',
       nutriscore: '',
-      defaultPrice: 0,
+      defaultPrice: 1.50,
       source: 'unknown'
     };
   }
@@ -185,10 +226,10 @@ class ProductAPI {
     if (lower.includes('pasta') || lower.includes('riso') || lower.includes('cereali') || lower.includes('farina')) {
       return 'Pasta & Cereali';
     }
-    if (lower.includes('pomodor') || lower.includes('conserve') || lower.includes('sugh') || lower.includes('tonno') || lower.includes('scatolame')) {
+    if (lower.includes('pomodor') || lower.includes('conserve') || lower.includes('sugh') || lower.includes('tonno') || lower.includes('scatolame') || lower.includes('fagioli') || lower.includes('legumi')) {
       return 'Conserve & Sughi';
     }
-    if (lower.includes('latte') || lower.includes('formagg') || lower.includes('yogurt') || lower.includes('fresch') || lower.includes('burro')) {
+    if (lower.includes('latte') || lower.includes('formagg') || lower.includes('yogurt') || lower.includes('fresch') || lower.includes('burro') || lower.includes('carne') || lower.includes('salumi')) {
       return 'Freschi & Latticini';
     }
     if (lower.includes('surgelat') || lower.includes('frozen') || lower.includes('gelat')) {
@@ -197,7 +238,7 @@ class ProductAPI {
     if (lower.includes('snack') || lower.includes('biscott') || lower.includes('cioccolat') || lower.includes('dolc')) {
       return 'Snack & Dolci';
     }
-    if (lower.includes('bevand') || lower.includes('acqua') || lower.includes('caff') || lower.includes('te') || lower.includes('vino') || lower.includes('succo')) {
+    if (lower.includes('bevand') || lower.includes('acqua') || lower.includes('caff') || lower.includes('te') || lower.includes('vino') || lower.includes('birra') || lower.includes('succo')) {
       return 'Bevande';
     }
     if (lower.includes('olio') || lower.includes('spezi') || lower.includes('aceto') || lower.includes('sale') || lower.includes('condiment')) {

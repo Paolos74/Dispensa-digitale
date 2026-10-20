@@ -1188,3 +1188,87 @@ h3 {
 .nutriscore-c { background: #fecb02; color: #000; }
 .nutriscore-d { background: #ee8100; }
 .nutriscore-e { background: #e63e11; }
+
+/* ==========================================================================
+   Receipt / Scontrino Bulk Importer & Scanner Autofocus Styles
+   ========================================================================== */
+.receipt-parse-container {
+  overflow-x: auto;
+  border-radius: var(--r-s);
+  background: var(--card);
+  border: 1px solid var(--line);
+  margin-top: 14px;
+}
+
+.receipt-parse-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  min-width: 540px;
+}
+
+.receipt-parse-table th {
+  text-align: left;
+  padding: 10px 8px;
+  font-weight: 700;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  background: var(--card-2);
+}
+
+.receipt-parse-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.receipt-parse-row.row-disabled {
+  opacity: 0.38;
+}
+
+.progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--card-2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--shu-2), var(--shu));
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.btn-cam-zoom {
+  font-size: 0.82rem;
+  font-weight: 800;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-s);
+}
+
+.focus-hint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--card-2);
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  margin-top: 4px;
+}

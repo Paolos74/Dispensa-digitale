@@ -1,21 +1,46 @@
-// Supermarket Cashier Continuous Scanner Engine
+// Supermarket Cashier Continuous Scanner Engine with Hardware Autofocus, Zoom & Dual Detection
 class CashierScanner {
   constructor() {
     this.html5QrCode = null;
     this.isScanning = false;
     this.currentCameraId = null;
     this.availableCameras = [];
+    this.videoTrack = null;
     this.hasTorch = false;
     this.torchOn = false;
+    this.hasZoom = false;
+    this.currentZoom = 1;
+    this.minZoom = 1;
+    this.maxZoom = 3;
+
+    // Native BarcodeDetector engine (Android Chrome hardware-accelerated)
+    this.nativeDetector = null;
+    this.nativeDetectLoopId = null;
 
     // Cashier Session Ticket (Nastro Cassa)
-    this.ticketItems = []; // Array of { barcode, name, brand, category, quantity, unit, price, nutriscore, image }
-    this.targetMode = 'pantry_load'; // 'pantry_load' (Carico), 'pantry_consume' (Scarico), 'shopping_list' (Lista Spesa)
+    this.ticketItems = [];
+    this.targetMode = 'pantry_load'; // 'pantry_load', 'pantry_consume', 'shopping_list'
 
     // Cooldown tracking for sequential cashier scanning
     this.lastScannedCode = null;
     this.lastScannedTime = 0;
-    this.SAME_CODE_COOLDOWN_MS = 1400; // Delay before incrementing the same item again
+    this.SAME_CODE_COOLDOWN_MS = 1400;
+
+    this.initNativeDetector();
+  }
+
+  async initNativeDetector() {
+    if ('BarcodeDetector' in window) {
+      try {
+        const supported = await BarcodeDetector.getSupportedFormats();
+        console.log('[Scanner] Native BarcodeDetector supportato:', supported);
+        this.nativeDetector = new BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code']
+        });
+      } catch (e) {
+        console.log('[Scanner] Native BarcodeDetector non disponibile:', e);
+      }
+    }
   }
 
   setMode(mode) {
@@ -28,26 +53,23 @@ class CashierScanner {
     const desc = document.getElementById('cashier-mode-desc');
     const submitBtn = document.getElementById('cashier-confirm-btn');
 
-    if (!badge || !desc || !submitBtn) return;
+    if (!submitBtn) return;
 
     if (this.targetMode === 'pantry_load') {
-      badge.textContent = '📦 Carico Dispensa';
-      badge.className = 'mode-pill mode-load';
-      desc.textContent = 'Scansiona a nastro i prodotti comprati per caricarli nella dispensa.';
-      submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg> Salva in Dispensa';
-      submitBtn.className = 'btn btn-primary';
+      if (badge) badge.textContent = '📦 Carico Dispensa';
+      if (desc) desc.textContent = 'Scansiona a nastro i prodotti comprati per caricarli nella dispensa.';
+      submitBtn.innerHTML = 'Salva in Dispensa';
+      submitBtn.className = 'btn primary';
     } else if (this.targetMode === 'pantry_consume') {
-      badge.textContent = '🍽️ Consumo / Scarico';
-      badge.className = 'mode-pill mode-consume';
-      desc.textContent = 'Scansiona i prodotti mentre li usi per scalare la quantità dalla dispensa.';
-      submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg> Conferma Consumo';
-      submitBtn.className = 'btn btn-warning';
+      if (badge) badge.textContent = '🍽️ Consumo / Scarico';
+      if (desc) desc.textContent = 'Scansiona i prodotti mentre li usi per scalare la quantità dalla dispensa.';
+      submitBtn.innerHTML = 'Conferma Consumo';
+      submitBtn.className = 'btn dark';
     } else if (this.targetMode === 'shopping_list') {
-      badge.textContent = '🛒 Alla Lista Spesa';
-      badge.className = 'mode-pill mode-shopping';
-      desc.textContent = 'Scansiona le confezioni finite per aggiungerle direttamente alla lista della spesa.';
-      submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Invia alla Lista Spesa';
-      submitBtn.className = 'btn btn-accent';
+      if (badge) badge.textContent = '🛒 Alla Lista Spesa';
+      if (desc) desc.textContent = 'Scansiona le confezioni finite per aggiungerle direttamente alla lista della spesa.';
+      submitBtn.innerHTML = 'Invia alla Spesa';
+      submitBtn.className = 'btn primary';
     }
   }
 
@@ -60,96 +82,161 @@ class CashierScanner {
       if (!this.html5QrCode) {
         this.html5QrCode = new Html5Qrcode('qr-reader', {
           formatsToSupport: [
-            Html5QrcodeSupportedFormats.QR_CODE,
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.EAN_8,
             Html5QrcodeSupportedFormats.UPC_A,
             Html5QrcodeSupportedFormats.UPC_E,
             Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.QR_CODE
           ],
-          verbose: false
+          verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
         });
       }
 
-      this.availableCameras = await Html5Qrcode.getCameras();
-      let cameraIdOrConfig = { facingMode: 'environment' };
-
-      if (this.availableCameras && this.availableCameras.length > 0) {
-        // Try back camera
-        const backCam = this.availableCameras.find(c =>
-          c.label.toLowerCase().includes('back') ||
-          c.label.toLowerCase().includes('rear') ||
-          c.label.toLowerCase().includes('posteriore')
-        );
-        cameraIdOrConfig = backCam ? backCam.id : this.availableCameras[0].id;
-        this.currentCameraId = cameraIdOrConfig;
-      }
+      // Advanced constraints for sharp barcode autofocus on mobile
+      const cameraConstraints = {
+        facingMode: { ideal: 'environment' },
+        width: { min: 1280, ideal: 1920 },
+        height: { min: 720, ideal: 1080 }
+      };
 
       const config = {
-        fps: 20, // High frame rate for cashier feeling
+        fps: 25,
         qrbox: (viewfinderWidth, viewfinderHeight) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          // Wide rectangular box optimized for horizontal 1D barcodes and QR codes
           return {
-            width: Math.floor(minEdge * 0.85),
-            height: Math.floor(minEdge * 0.55) // Wide barcode/QR window
+            width: Math.floor(viewfinderWidth * 0.90),
+            height: Math.floor(viewfinderHeight * 0.55)
           };
         },
         aspectRatio: 1.333
       };
 
       await this.html5QrCode.start(
-        cameraIdOrConfig,
+        cameraConstraints,
         config,
         (decodedText, decodedResult) => this.onScanSuccess(decodedText, decodedResult),
         (errorMessage) => {/* silent frame misses */}
       );
 
       this.isScanning = true;
-      document.getElementById('scanner-overlay').classList.add('active');
-      document.getElementById('scanner-status-text').textContent = 'Scanner attivo: passa i prodotti';
+      const statusText = document.getElementById('scanner-status-text');
+      if (statusText) statusText.textContent = 'Scanner attivo: inquadra il codice a barre';
 
-      // Check torch capability
-      try {
-        const capabilities = this.html5QrCode.getRunningTrackCapabilities();
-        this.hasTorch = Boolean(capabilities && capabilities.torch);
-        const torchBtn = document.getElementById('btn-toggle-torch');
-        if (torchBtn) {
-          torchBtn.style.display = this.hasTorch ? 'inline-flex' : 'none';
-        }
-      } catch (e) {
-        this.hasTorch = false;
-      }
+      // Setup Camera Hardware Capabilities (Autofocus, Zoom, Torch)
+      this.setupHardwareTrack();
+
+      // Start parallel native BarcodeDetector loop for maximum speed
+      this.startNativeDetectLoop();
+
     } catch (err) {
       console.error('Camera start error:', err);
-      document.getElementById('scanner-status-text').textContent = 'Fotocamera non disponibile. Usa la simulazione o inserimento manuale.';
+      const statusText = document.getElementById('scanner-status-text');
+      if (statusText) statusText.textContent = 'Fotocamera non disponibile. Usa il simulatore o inserimento manuale.';
       this.isScanning = false;
     }
   }
 
-  async stopCamera() {
-    if (this.html5QrCode && this.isScanning) {
-      try {
-        await this.html5QrCode.stop();
-      } catch (e) {
-        console.warn('Error stopping camera:', e);
+  setupHardwareTrack() {
+    setTimeout(async () => {
+      const video = document.querySelector('#qr-reader video');
+      if (!video || !video.srcObject) return;
+
+      const track = video.srcObject.getVideoTracks()[0];
+      if (!track) return;
+      this.videoTrack = track;
+
+      const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+      // 1. Force continuous autofocus on Android Chrome
+      if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+        try {
+          await track.applyConstraints({
+            advanced: [{ focusMode: 'continuous' }]
+          });
+          console.log('[Camera] Autofocus continuo attivato');
+        } catch (e) {
+          console.warn('[Camera] Autofocus constraint non supportato:', e);
+        }
       }
-      this.isScanning = false;
-      const overlay = document.getElementById('scanner-overlay');
-      if (overlay) overlay.classList.remove('active');
+
+      // 2. Hardware Zoom (Key for sharp barcodes!)
+      const zoomBtn = document.getElementById('btn-toggle-zoom');
+      if (capabilities.zoom) {
+        this.hasZoom = true;
+        this.minZoom = capabilities.zoom.min || 1;
+        this.maxZoom = Math.min(capabilities.zoom.max || 3, 3);
+        if (zoomBtn) {
+          zoomBtn.style.display = 'grid';
+          zoomBtn.textContent = '1x';
+        }
+      } else {
+        if (zoomBtn) zoomBtn.style.display = 'none';
+      }
+
+      // 3. Torch
+      const torchBtn = document.getElementById('btn-toggle-torch');
+      if (capabilities.torch) {
+        this.hasTorch = true;
+        if (torchBtn) torchBtn.style.display = 'grid';
+      } else {
+        if (torchBtn) torchBtn.style.display = 'none';
+      }
+
+      // 4. Tap to focus on camera
+      const cameraBox = document.querySelector('.camera-container');
+      if (cameraBox) {
+        cameraBox.onclick = (e) => {
+          if (e.target.closest('button')) return;
+          this.triggerRefocus();
+        };
+      }
+    }, 400);
+  }
+
+  async triggerRefocus() {
+    if (!this.videoTrack) return;
+    try {
+      showToast('🎯 Messa a fuoco...', 1000);
+      // Re-apply continuous autofocus
+      await this.videoTrack.applyConstraints({
+        advanced: [{ focusMode: 'continuous' }]
+      });
+    } catch (e) {
+      console.warn('Refocus error:', e);
+    }
+  }
+
+  async toggleZoom() {
+    if (!this.videoTrack || !this.hasZoom) return;
+    try {
+      this.currentZoom = this.currentZoom === 1 ? Math.min(2, this.maxZoom) : 1;
+      await this.videoTrack.applyConstraints({
+        advanced: [{ zoom: this.currentZoom }]
+      });
+      const zoomBtn = document.getElementById('btn-toggle-zoom');
+      if (zoomBtn) zoomBtn.textContent = `${this.currentZoom}x`;
+      showToast(`🔍 Zoom ${this.currentZoom}x attivato`, 1200);
+    } catch (e) {
+      console.warn('Zoom error:', e);
     }
   }
 
   async toggleTorch() {
-    if (!this.html5QrCode || !this.hasTorch) return;
+    if (!this.videoTrack || !this.hasTorch) return;
     try {
       this.torchOn = !this.torchOn;
-      await this.html5QrCode.applyVideoConstraints({
+      await this.videoTrack.applyConstraints({
         advanced: [{ torch: this.torchOn }]
       });
       const torchBtn = document.getElementById('btn-toggle-torch');
       if (torchBtn) {
-        torchBtn.classList.toggle('active', this.torchOn);
+        torchBtn.style.background = this.torchOn ? 'var(--shu)' : 'rgba(255,255,255,0.85)';
+        torchBtn.style.color = this.torchOn ? '#fff' : 'var(--ink)';
       }
     } catch (e) {
       console.warn('Torch toggle error:', e);
@@ -165,21 +252,63 @@ class CashierScanner {
     await this.startCamera();
   }
 
-  // CORE CASHIER SCAN LOGIC: Continuous sequential processing with supermarket feedback
+  // Parallel hardware BarcodeDetector loop for lightning-fast detection
+  startNativeDetectLoop() {
+    if (!this.nativeDetector) return;
+
+    const detectFrame = async () => {
+      if (!this.isScanning) return;
+
+      const video = document.querySelector('#qr-reader video');
+      if (video && video.readyState >= 2) {
+        try {
+          const barcodes = await this.nativeDetector.detect(video);
+          if (barcodes && barcodes.length > 0) {
+            const rawValue = barcodes[0].rawValue;
+            if (rawValue) {
+              this.onScanSuccess(rawValue, null);
+            }
+          }
+        } catch (e) {}
+      }
+
+      this.nativeDetectLoopId = setTimeout(detectFrame, 90);
+    };
+
+    detectFrame();
+  }
+
+  async stopCamera() {
+    if (this.nativeDetectLoopId) {
+      clearTimeout(this.nativeDetectLoopId);
+      this.nativeDetectLoopId = null;
+    }
+    if (this.html5QrCode && this.isScanning) {
+      try {
+        await this.html5QrCode.stop();
+      } catch (e) {
+        console.warn('Error stopping camera:', e);
+      }
+      this.isScanning = false;
+    }
+    this.videoTrack = null;
+  }
+
+  // CORE SCAN LOGIC
   async onScanSuccess(decodedText, decodedResult) {
     const now = Date.now();
     const barcode = decodedText.trim();
 
     // Check debounce for the exact same barcode
     if (this.lastScannedCode === barcode && (now - this.lastScannedTime) < this.SAME_CODE_COOLDOWN_MS) {
-      return; // Skip too-fast duplicate frame
+      return;
     }
 
     const isDuplicate = this.ticketItems.some(item => item.barcode === barcode);
     this.lastScannedCode = barcode;
     this.lastScannedTime = now;
 
-    // Visual scan laser flash
+    // Visual laser flash
     this.flashLaser();
 
     // Audio & Haptic Feedback
@@ -202,7 +331,7 @@ class CashierScanner {
   }
 
   async addItemToTicket(barcode) {
-    // 1. Check if already in current ticket -> increment quantity!
+    // 1. If already on ticket -> increment quantity!
     const existingIndex = this.ticketItems.findIndex(i => i.barcode === barcode);
     if (existingIndex !== -1) {
       this.ticketItems[existingIndex].quantity += 1;
@@ -211,10 +340,15 @@ class CashierScanner {
       return;
     }
 
-    // 2. Fetch product info from API/Cache/LocalCatalog
+    // 2. Fetch product info
     const info = await window.productAPI.lookup(barcode);
 
-    // 3. Fallback price based on category if 0
+    // If product is unknown, prompt quick naming modal once
+    if (info.source === 'unknown') {
+      this.promptUnknownProduct(barcode);
+      return;
+    }
+
     let price = info.defaultPrice || 1.50;
     if (info.category === 'Pasta & Cereali' && !info.defaultPrice) price = 1.20;
     if (info.category === 'Freschi & Latticini' && !info.defaultPrice) price = 1.60;
@@ -233,14 +367,47 @@ class CashierScanner {
       addedAt: new Date()
     };
 
-    this.ticketItems.unshift(newItem); // Place newest at top of receipt
+    this.ticketItems.unshift(newItem);
     this.renderTicket();
     this.highlightItem(0);
   }
 
+  promptUnknownProduct(barcode) {
+    const name = prompt(`Nuovo codice a barre rilevato: ${barcode}\n\nCome si chiama questo prodotto? (es. Biscotti, Passata, Yogurt...)`);
+    if (name && name.trim()) {
+      const cleanName = name.trim();
+      const category = window.productAPI.mapCategory([], cleanName);
+      const productObj = {
+        barcode,
+        name: cleanName,
+        brand: '',
+        category,
+        quantityStr: '1 pz',
+        defaultPrice: 1.50
+      };
+
+      // Cache permanently in IndexedDB
+      window.dispensaDB.put('barcodeCache', productObj).catch(()=>{});
+
+      this.ticketItems.unshift({
+        barcode,
+        name: cleanName,
+        brand: '',
+        category,
+        quantity: 1,
+        unit: 'pz',
+        price: 1.50,
+        nutriscore: '',
+        addedAt: new Date()
+      });
+      this.renderTicket();
+      this.highlightItem(0);
+    }
+  }
+
   highlightItem(index) {
     setTimeout(() => {
-      const items = document.querySelectorAll('.ticket-row');
+      const items = document.querySelectorAll('.ticket-row, .receipt-row');
       if (items && items[index]) {
         items[index].classList.add('just-scanned');
         setTimeout(() => items[index].classList.remove('just-scanned'), 800);
@@ -280,7 +447,7 @@ class CashierScanner {
 
     if (this.ticketItems.length === 0) {
       listEl.innerHTML = '';
-      if (emptyNotice) emptyNotice.style.display = 'flex';
+      if (emptyNotice) emptyNotice.style.display = 'block';
       if (ticketFooter) ticketFooter.style.display = 'none';
       if (totalCountEl) totalCountEl.textContent = '0 articoli';
       if (totalPriceEl) totalPriceEl.textContent = '0,00 €';
@@ -301,30 +468,28 @@ class CashierScanner {
       const nutriscoreBadge = item.nutriscore ? `<span class="nutriscore-badge nutriscore-${item.nutriscore.toLowerCase()}">${item.nutriscore}</span>` : '';
 
       return `
-        <div class="ticket-row" data-idx="${idx}">
-          <div class="ticket-col-info">
-            <div class="ticket-name">
+        <div class="receipt-row" data-idx="${idx}">
+          <div style="min-width: 0;">
+            <div class="receipt-name">
               ${escapeHtml(item.name)}
               ${nutriscoreBadge}
             </div>
-            <div class="ticket-sub">
+            <div class="receipt-sub">
               ${item.brand ? `<span>${escapeHtml(item.brand)}</span> • ` : ''}
               <span>${item.category}</span>
-              <span class="ticket-barcode">(${item.barcode})</span>
+              <span style="font-family: monospace;">(${item.barcode})</span>
             </div>
           </div>
-          <div class="ticket-col-qty">
-            <button class="btn-qty" onclick="window.cashierScanner.updateItemQuantity(${idx}, -1)" title="Diminuisci">−</button>
-            <span class="qty-badge">${item.quantity}</span>
-            <button class="btn-qty" onclick="window.cashierScanner.updateItemQuantity(${idx}, 1)" title="Aumenta">+</button>
+          <div class="qty-stepper">
+            <button class="btn-step" onclick="window.cashierScanner.updateItemQuantity(${idx}, -1)" title="Diminuisci">−</button>
+            <span class="qty-val">${item.quantity}</span>
+            <button class="btn-step" onclick="window.cashierScanner.updateItemQuantity(${idx}, 1)" title="Aumenta">+</button>
           </div>
-          <div class="ticket-col-price">
-            <span class="item-subtotal">${subtotal} €</span>
-            <span class="item-unit-price">${item.price.toFixed(2)} €/pz</span>
+          <div class="receipt-price">
+            <div>${subtotal} €</div>
+            <div class="muted small">${item.price.toFixed(2)} €/pz</div>
           </div>
-          <div class="ticket-col-action">
-            <button class="btn-del" onclick="window.cashierScanner.removeItem(${idx})" title="Elimina dal nastro">✕</button>
-          </div>
+          <button class="round" style="width: 28px; height: 28px; font-size: 0.8rem;" onclick="window.cashierScanner.removeItem(${idx})" title="Elimina">✕</button>
         </div>
       `;
     }).join('');
@@ -355,7 +520,6 @@ class CashierScanner {
 
   async commitPantryLoad() {
     const today = new Date();
-    // Default expiry 6 months from now if not specified
     const defaultExpiry = new Date(today);
     defaultExpiry.setMonth(defaultExpiry.getMonth() + 6);
     const expiryStr = defaultExpiry.toISOString().split('T')[0];
@@ -368,7 +532,6 @@ class CashierScanner {
       totalSpent += (scanned.price * scanned.quantity);
       totalItems += scanned.quantity;
 
-      // Check if item already exists in pantry (by barcode or exact name)
       const existing = currentPantry.find(p =>
         (scanned.barcode && p.barcode === scanned.barcode) ||
         (p.name.toLowerCase() === scanned.name.toLowerCase())
@@ -402,7 +565,6 @@ class CashierScanner {
       }
     }
 
-    // Automatically record shopping expense!
     await window.dispensaDB.put('expenses', {
       id: 'exp-' + Date.now(),
       date: today.toISOString().split('T')[0],
@@ -435,7 +597,6 @@ class CashierScanner {
         await window.dispensaDB.put('pantry', match);
         consumedCount += scanned.quantity;
 
-        // Check if finished or below minQuantity
         if (match.quantity <= match.minQuantity) {
           needBuyAlerts.push(match);
         }
@@ -446,7 +607,7 @@ class CashierScanner {
 
     if (needBuyAlerts.length > 0) {
       const names = needBuyAlerts.map(i => i.name).join(', ');
-      showToast(`🍽️ Consumati ${consumedCount} articoli. Attenzione: [${names}] sono in esaurimento!`, 4000);
+      showToast(`🍽️ Consumati ${consumedCount} articoli. [${names}] sono in esaurimento!`, 4000);
     } else {
       showToast(`🍽️ ${consumedCount} articoli consumati e scalati dalla dispensa.`);
     }

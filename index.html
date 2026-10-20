@@ -73,9 +73,14 @@
     <!-- VIEW 1: PANTRY (DISPENSA)                                      -->
     <!-- ============================================================== -->
     <section id="view-pantry" class="view-section active">
-      <div style="margin: 4px 0 16px;">
-        <h2 class="serif">La Mia Dispensa</h2>
-        <p class="lead">Scorte, scadenze e prodotti in esaurimento.</p>
+      <div style="margin: 4px 0 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+        <div>
+          <h2 class="serif">La Mia Dispensa</h2>
+          <p class="lead">Scorte, scadenze e prodotti in esaurimento.</p>
+        </div>
+        <button class="btn small ghost" onclick="window.receiptManager.openReceiptModal()" title="Importa molti articoli da scontrino">
+          🧾 Da Scontrino
+        </button>
       </div>
 
       <!-- Quick Metrics Pills (.gpills & .gpill da jp27-trip) -->
@@ -145,7 +150,7 @@
       <div id="pantry-empty-state" class="card" style="display: none; text-align: center; padding: 36px 16px;">
         <div style="font-size: 2.8rem; margin-bottom: 8px;">🥫</div>
         <h3>Nessun alimento trovato</h3>
-        <p class="muted small">Aggiungi nuovi alimenti o usa la Cassa Scanner per caricarli in sequenza rapida.</p>
+        <p class="muted small">Aggiungi nuovi alimenti o usa la Cassa Scanner o l'Import da Scontrino.</p>
       </div>
     </section>
 
@@ -155,9 +160,14 @@
     <section id="view-cashier" class="view-section">
       <div class="cashier-wrap">
 
-        <div style="margin: 4px 0 10px;">
-          <h2 class="serif">Cassa Continua</h2>
-          <p class="lead">Passa i prodotti a nastro con feedback sonoro e aptico.</p>
+        <div style="margin: 4px 0 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+          <div>
+            <h2 class="serif">Cassa Continua</h2>
+            <p class="lead">Passa i prodotti a nastro con feedback sonoro e aptico.</p>
+          </div>
+          <button class="btn small" onclick="window.receiptManager.openReceiptModal()" title="Hai uno scontrino intero?">
+            🧾 Da Scontrino
+          </button>
         </div>
 
         <!-- Selettore Modalità Cassa (.mode-segmented) -->
@@ -167,7 +177,7 @@
           <button class="mode-seg-btn" onclick="setCashierMode('shopping_list', this)">🛒 Lista Spesa</button>
         </div>
 
-        <!-- Camera Viewfinder -->
+        <!-- Camera Viewfinder con Autofocus e Zoom -->
         <div class="camera-container">
           <div id="qr-reader"></div>
 
@@ -176,18 +186,24 @@
               <div id="scanner-laser-beam" class="scanner-red-laser"></div>
             </div>
 
-            <!-- Controlli Rapidi Floating -->
+            <!-- Controlli Rapidi Floating: Zoom, Autofocus, Torcia, Switch -->
             <div class="cam-controls-top">
-              <button id="btn-toggle-torch" class="round" onclick="window.cashierScanner.toggleTorch()" title="Torcia" style="display: none; background: rgba(255,255,255,0.85);">
+              <button id="btn-toggle-zoom" class="btn-cam-zoom" onclick="window.cashierScanner.toggleZoom()" title="Zoom 1x / 2x" style="display: none;">
+                1x
+              </button>
+              <button class="round" onclick="window.cashierScanner.triggerRefocus()" title="Metti a fuoco (Tap to focus)" style="background: rgba(255,255,255,0.88);">
+                🎯
+              </button>
+              <button id="btn-toggle-torch" class="round" onclick="window.cashierScanner.toggleTorch()" title="Torcia" style="display: none; background: rgba(255,255,255,0.88);">
                 💡
               </button>
-              <button class="round" onclick="window.cashierScanner.switchCamera()" title="Cambia camera" style="background: rgba(255,255,255,0.85);">
+              <button class="round" onclick="window.cashierScanner.switchCamera()" title="Cambia camera" style="background: rgba(255,255,255,0.88);">
                 🔄
               </button>
             </div>
 
             <div class="cam-pill-status" id="scanner-status-text">
-              Inquadra un codice a barre EAN o QR code
+              Inquadra il codice a barre • Tocca per mettere a fuoco • Usa 2x per codici piccoli
             </div>
           </div>
         </div>
@@ -247,14 +263,19 @@
     <!-- VIEW 3: SHOPPING LIST & EXPENSES TRACKER                       -->
     <!-- ============================================================== -->
     <section id="view-shopping" class="view-section">
-      <div style="margin: 4px 0 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+      <div style="margin: 4px 0 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
         <div>
           <h2 class="serif">Spesa & Budget</h2>
           <p class="lead">Lista intelligente e monitoraggio dei costi.</p>
         </div>
-        <button class="btn small primary" onclick="window.shoppingManager.openManualExpenseModal()">
-          🧾 + Scontrino
-        </button>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn small primary" onclick="window.receiptManager.openReceiptModal()">
+            🧾 Importa da Scontrino
+          </button>
+          <button class="btn small" onclick="window.shoppingManager.openManualExpenseModal()">
+            + Manuale
+          </button>
+        </div>
       </div>
 
       <!-- Riepilogo Mensile jp27-trip Spese -->
@@ -601,6 +622,102 @@
     </div>
   </div>
 
+  <!-- Modal 4: Importa da Scontrino (Foto OCR o Testo) -->
+  <div id="modal-receipt-import" class="sheet" hidden>
+    <div class="sheet-bg" onclick="window.receiptManager.closeReceiptModal()"></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" style="max-height: 94vh;">
+      <div class="sheet-top">
+        <div class="grab" aria-hidden="true"></div>
+        <button class="sheet-x" onclick="window.receiptManager.closeReceiptModal()">✕</button>
+      </div>
+      <div class="sheet-body" style="padding-bottom: 24px;">
+        <h2 class="serif" style="margin: 0 0 4px;">🧾 Importa da Scontrino</h2>
+        <p class="muted small" style="margin: 0 0 14px;">
+          Carica la foto dello scontrino o incolla il testo per importare decine di articoli in dispensa in un colpo solo.
+        </p>
+
+        <!-- Selettore sorgente: Foto o Testo -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+          <label class="btn small primary" style="flex: 1; min-width: 180px; cursor: pointer; text-align: center;">
+            📷 Scatta o Carica Foto Scontrino
+            <input type="file" id="receipt-file-input" accept="image/*" style="display: none;" onchange="window.receiptManager.processReceiptImage(this.files[0])">
+          </label>
+          <button class="btn small ghost" onclick="window.receiptManager.loadSampleReceipt()" title="Prova con scontrino di esempio">
+            ⚡ Carica Esempio
+          </button>
+        </div>
+
+        <!-- Indicatore Progresso OCR -->
+        <div id="receipt-ocr-status" style="display: none; background: var(--card-2); padding: 12px; border-radius: 14px; border: 1px solid var(--line); margin-bottom: 12px;">
+          <div id="receipt-ocr-status-text" class="muted small" style="font-weight: 600;">Analisi OCR in corso...</div>
+          <div class="progress-wrap">
+            <div id="receipt-ocr-progress" class="progress-bar" style="width: 20%;"></div>
+          </div>
+        </div>
+
+        <!-- Area Incolla / Modifica Testo Scontrino -->
+        <div>
+          <label class="muted small" style="font-weight: 600; display: block; margin-bottom: 4px;">
+            Testo dello scontrino (da foto o incollato):
+          </label>
+          <textarea id="receipt-textarea" rows="5" placeholder="Incolla qui le righe dello scontrino, es:&#10;SPAGHETTI BARILLA 1,15&#10;PASSATA MUTTI 1,49&#10;LATTE FRESCO 1,35&#10;BISCOTTI MULINO BIANCO 2,89" style="font-family: monospace; font-size: 0.85rem; line-height: 1.4;"></textarea>
+          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+            <button class="btn small dark" onclick="window.receiptManager.parseTextInput()">
+              🔍 Analizza Righe Scontrino
+            </button>
+          </div>
+        </div>
+
+        <!-- Risultati Analisi Scontrino (Tabella di Revisione) -->
+        <div id="receipt-results-container" style="display: none; margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 1rem;">Articoli Rilevati dallo Scontrino</h3>
+            <span id="receipt-items-count" class="pill ok" style="font-size: 0.75rem;">0 articoli</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <div>
+              <label class="muted small">Supermercato</label>
+              <input type="text" id="receipt-store-input" value="Supermercato" style="min-height: 38px; padding: 6px 10px; font-size: 0.85rem;">
+            </div>
+            <div>
+              <label class="muted small">Data Scontrino</label>
+              <input type="date" id="receipt-date-input" style="min-height: 38px; padding: 6px 10px; font-size: 0.85rem;">
+            </div>
+          </div>
+
+          <div class="receipt-parse-container">
+            <table class="receipt-parse-table">
+              <thead>
+                <tr>
+                  <th style="width: 36px; text-align: center;">Usa</th>
+                  <th>Alimento</th>
+                  <th>Categoria</th>
+                  <th>Luogo</th>
+                  <th style="width: 70px;">Q.tà</th>
+                  <th style="width: 75px; text-align: right;">Prezzo €</th>
+                  <th style="width: 32px;"></th>
+                </tr>
+              </thead>
+              <tbody id="receipt-items-tbody"></tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); flex-wrap: wrap; gap: 8px;">
+            <div>
+              <span class="muted small">Totale Spesa:</span>
+              <strong id="receipt-total-amount" style="font-size: 1.25rem; color: var(--shu); display: block;">0,00 €</strong>
+            </div>
+            <button class="btn primary" onclick="window.receiptManager.commitReceiptToPantry()">
+              ✅ Importa Tutti in Dispensa
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container"></div>
 
@@ -643,9 +760,11 @@
 
   <!-- Scripts -->
   <script src="lib/html5-qrcode.min.js"></script>
+  <script src="lib/tesseract.min.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/db.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/receipt.js"></script>
   <script src="js/scanner.js"></script>
   <script src="js/pantry.js"></script>
   <script src="js/shopping.js"></script>

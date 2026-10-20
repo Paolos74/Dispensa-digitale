@@ -1,5 +1,5 @@
 // Service Worker for Dispensa & Cassa Smart PWA
-const CACHE_NAME = 'dispensa-smart-v1.0.0';
+const CACHE_NAME = 'dispensa-smart-v1.1.0';
 
 const STATIC_ASSETS = [
   './',
@@ -14,7 +14,9 @@ const STATIC_ASSETS = [
   './js/shopping.js',
   './js/api.js',
   './js/audio.js',
+  './js/receipt.js',
   './lib/html5-qrcode.min.js',
+  './lib/tesseract.min.js',
   './icons/icon-72.png',
   './icons/icon-96.png',
   './icons/icon-128.png',
