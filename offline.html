@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Non Connesso - Dispensa Smart</title>
+  <meta name="theme-color" content="#f5f1ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e0d0c" media="(prefers-color-scheme: dark)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Shippori+Mincho:wght@800&display=swap" rel="stylesheet">
+  <script>
+    try {
+      const t = JSON.parse(localStorage.getItem("dispensa:theme") || '""');
+      if (t) document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --card: #ffffff;
+      --ink: #1c1915;
+      --muted: #857b6e;
+      --line: rgba(60, 45, 25, 0.10);
+      --shu: #d4442f;
+      --shu-2: #ef6a4f;
+      --r: 24px;
+      --shadow: 0 4px 16px rgba(40, 25, 10, 0.08);
+      --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0e0d0c;
+        --card: #1a1815;
+        --ink: #f4efe7;
+        --muted: #958b7d;
+        --line: rgba(255, 240, 220, 0.09);
+        --shu: #f0644c;
+        --shu-2: #ff8a6b;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e0d0c;
+      --card: #1a1815;
+      --ink: #f4efe7;
+      --muted: #958b7d;
+      --line: rgba(255, 240, 220, 0.09);
+      --shu: #f0644c;
+      --shu-2: #ff8a6b;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      text-align: center;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 36px 24px;
+      max-width: 420px;
+      box-shadow: var(--shadow);
+    }
+    .icon {
+      font-size: 3.5rem;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--ink);
+      letter-spacing: -0.015em;
+    }
+    p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--shu-2), var(--shu));
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 12px 24px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 6px 16px rgba(212, 68, 47, 0.3);
+      transition: transform 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .note {
+      margin-top: 18px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>Sei Offline</h1>
+    <p>Non hai una connessione internet attiva al momento. La tua dispensa, la lista della spesa e lo scanner continuano a funzionare normalmente!</p>
+    <button class="btn" onclick="window.location.href='./index.html'">
+      Torna all'App
+    </button>
+    <div class="note">I dati salvati localmente rimangono al sicuro sul tuo dispositivo.</div>
+  </div>
+</body>
+</html>

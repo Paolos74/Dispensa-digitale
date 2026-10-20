@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Dispensa Smart</title>
+  <meta name="description" content="Gestione intelligente della dispensa, spesa e cassa continua con lettore barcode e QR code.">
+
+  <!-- Theme color for light/dark matching jp27-trip -->
+  <meta name="theme-color" content="#f5f1ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e0d0c" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Dispensa">
+
+  <!-- Icons & Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <!-- Fonts Google matching jp27-trip -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Shippori+Mincho:wght@800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Theme initialization inline script (jp27-trip pattern) -->
+  <script>
+    try {
+      const t = JSON.parse(localStorage.getItem("dispensa:theme") || '""');
+      if (t) document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+
+  <!-- Header Stile App iPhone (jp27-trip .top) -->
+  <header class="top" id="top-bar">
+    <div class="tb-l">
+      <span class="tbdate" id="header-date">Dispensa</span>
+    </div>
+    <div class="ctitle" id="ctitle">Dispensa Smart</div>
+    <div class="tb-r">
+      <button id="theme-toggle-btn" class="round" title="Cambia tema chiaro/scuro" onclick="toggleAppTheme()">
+        🌓
+      </button>
+      <button id="header-add-btn" class="tbplus" title="Nuovo alimento" onclick="window.pantryManager.openAddModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <span id="connection-sync-dot" class="sync-dot on" title="Stato connessione: Online"></span>
+    </div>
+  </header>
+
+  <!-- PWA Install / Update Banners -->
+  <div class="container" style="padding-bottom: 0;">
+    <div id="pwa-update-banner" class="pwa-banner-card update" style="display: none;">
+      <div><strong>⚡ Aggiornamento disponibile</strong><div class="muted small">Nuova versione pronta per l'installazione</div></div>
+      <button id="btn-apply-update" class="btn small dark">Ricarica</button>
+    </div>
+
+    <div id="pwa-install-banner" class="pwa-banner-card install" style="display: none;">
+      <div><strong>Installa l'App</strong><div class="muted small">Aggiungila alla Home come app nativa</div></div>
+      <button class="btn small primary" onclick="window.pwaManager.promptInstall()">Installa</button>
+    </div>
+  </div>
+
+  <!-- Main View Container -->
+  <main class="container">
+
+    <!-- ============================================================== -->
+    <!-- VIEW 1: PANTRY (DISPENSA)                                      -->
+    <!-- ============================================================== -->
+    <section id="view-pantry" class="view-section active">
+      <div style="margin: 4px 0 16px;">
+        <h2 class="serif">La Mia Dispensa</h2>
+        <p class="lead">Scorte, scadenze e prodotti in esaurimento.</p>
+      </div>
+
+      <!-- Quick Metrics Pills (.gpills & .gpill da jp27-trip) -->
+      <div class="gpills">
+        <div class="gpill">
+          <span>📦 Alimenti:</span>
+          <b id="stat-total-items">0</b>
+        </div>
+        <div class="gpill warn">
+          <span>⏳ In scadenza:</span>
+          <b id="stat-expiring-soon">0</b>
+        </div>
+        <div class="gpill danger">
+          <span>⚠️ Scaduti:</span>
+          <b id="stat-expired">0</b>
+        </div>
+        <div class="gpill warn">
+          <span>📉 Sotto scorta:</span>
+          <b id="stat-low-stock">0</b>
+        </div>
+      </div>
+
+      <!-- Search & Chips Filter -->
+      <div class="card" style="padding: 12px 14px;">
+        <div class="searchbox">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="pantry-search" placeholder="Cerca alimenti, marca, codice a barre..." oninput="window.pantryManager.setSearchQuery(this.value)">
+        </div>
+
+        <!-- Chips Categorie a Scorrimento Orizzontale (.chips & .chip) -->
+        <div class="chips" id="category-pills">
+          <button class="chip on" onclick="setCategoryFilter('all', this)">Tutte le categorie</button>
+          <button class="chip" onclick="setCategoryFilter('Pasta & Cereali', this)">🍝 Pasta & Cereali</button>
+          <button class="chip" onclick="setCategoryFilter('Conserve & Sughi', this)">🥫 Conserve</button>
+          <button class="chip" onclick="setCategoryFilter('Freschi & Latticini', this)">🥛 Freschi</button>
+          <button class="chip" onclick="setCategoryFilter('Surgelati', this)">🧊 Surgelati</button>
+          <button class="chip" onclick="setCategoryFilter('Snack & Dolci', this)">🍪 Snack & Dolci</button>
+          <button class="chip" onclick="setCategoryFilter('Bevande', this)">☕ Bevande</button>
+          <button class="chip" onclick="setCategoryFilter('Condimenti & Spezie', this)">🧂 Condimenti</button>
+          <button class="chip" onclick="setCategoryFilter('Igiene & Casa', this)">🧼 Casa</button>
+          <button class="chip" onclick="setCategoryFilter('Altro', this)">📦 Altro</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.82rem; gap: 8px;">
+          <select style="min-height: 38px; padding: 6px 30px 6px 10px; font-size: 0.82rem;" onchange="window.pantryManager.setFilterLocation(this.value)">
+            <option value="all">📍 Tutti i luoghi</option>
+            <option value="Dispensa">Dispensa</option>
+            <option value="Frigo">Frigo</option>
+            <option value="Freezer">Freezer</option>
+            <option value="Cantina">Cantina</option>
+            <option value="Ripostiglio">Ripostiglio</option>
+          </select>
+
+          <select style="min-height: 38px; padding: 6px 30px 6px 10px; font-size: 0.82rem;" onchange="window.pantryManager.setSortBy(this.value)">
+            <option value="expiry_asc">Scadenza più vicina</option>
+            <option value="name_asc">Nome (A - Z)</option>
+            <option value="qty_desc">Quantità maggiore</option>
+            <option value="recent">Ultimi aggiornati</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Pantry Grid -->
+      <div id="pantry-grid" class="pantry-grid"></div>
+
+      <!-- Empty State -->
+      <div id="pantry-empty-state" class="card" style="display: none; text-align: center; padding: 36px 16px;">
+        <div style="font-size: 2.8rem; margin-bottom: 8px;">🥫</div>
+        <h3>Nessun alimento trovato</h3>
+        <p class="muted small">Aggiungi nuovi alimenti o usa la Cassa Scanner per caricarli in sequenza rapida.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 2: CASHIER SCANNER (CASSA SUPERMERCATO)                  -->
+    <!-- ============================================================== -->
+    <section id="view-cashier" class="view-section">
+      <div class="cashier-wrap">
+
+        <div style="margin: 4px 0 10px;">
+          <h2 class="serif">Cassa Continua</h2>
+          <p class="lead">Passa i prodotti a nastro con feedback sonoro e aptico.</p>
+        </div>
+
+        <!-- Selettore Modalità Cassa (.mode-segmented) -->
+        <div class="mode-segmented">
+          <button class="mode-seg-btn active" onclick="setCashierMode('pantry_load', this)">📦 Carico Dispensa</button>
+          <button class="mode-seg-btn" onclick="setCashierMode('pantry_consume', this)">🍽️ Scarico</button>
+          <button class="mode-seg-btn" onclick="setCashierMode('shopping_list', this)">🛒 Lista Spesa</button>
+        </div>
+
+        <!-- Camera Viewfinder -->
+        <div class="camera-container">
+          <div id="qr-reader"></div>
+
+          <div id="scanner-overlay" class="scanner-overlay">
+            <div class="scanner-frame">
+              <div id="scanner-laser-beam" class="scanner-red-laser"></div>
+            </div>
+
+            <!-- Controlli Rapidi Floating -->
+            <div class="cam-controls-top">
+              <button id="btn-toggle-torch" class="round" onclick="window.cashierScanner.toggleTorch()" title="Torcia" style="display: none; background: rgba(255,255,255,0.85);">
+                💡
+              </button>
+              <button class="round" onclick="window.cashierScanner.switchCamera()" title="Cambia camera" style="background: rgba(255,255,255,0.85);">
+                🔄
+              </button>
+            </div>
+
+            <div class="cam-pill-status" id="scanner-status-text">
+              Inquadra un codice a barre EAN o QR code
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulatore Rapido Barcode (jp27-trip style) -->
+        <div class="sim-drawer">
+          <div class="sim-title">⚡ Simulatore Rapido Cassa (Test Senza Camera)</div>
+          <div class="sim-chips">
+            <button class="chip" data-code="8076809513753">🍝 Spaghetti Barilla</button>
+            <button class="chip" data-code="8005110000000">🥫 Passata Mutti</button>
+            <button class="chip" data-code="8001300214619">🥛 Latte Granarolo</button>
+            <button class="chip" data-code="8000500310427">🍫 Nutella Ferrero</button>
+            <button class="chip" data-code="8000050800010">☕ Caffè Lavazza</button>
+            <button class="chip" data-code="8001120790100">🐟 Tonno Rio Mare</button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="manual-barcode-input" placeholder="Digita codice a barre manuale..." style="flex: 1; min-height: 42px; padding: 8px 12px; font-size: 0.9rem;">
+            <button id="btn-manual-scan" class="btn small dark">Bip!</button>
+            <label class="btn small" style="cursor: pointer;" title="Carica foto barcode">
+              📷
+              <input type="file" id="qr-input-file" accept="image/*" style="display: none;">
+            </label>
+          </div>
+        </div>
+
+        <!-- Scontrino / Nastro Cassa Live (.receipt-box) -->
+        <div class="receipt-box">
+          <div class="receipt-head">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.15rem;">🧾</span>
+              <strong>Nastro Cassa Supermercato</strong>
+            </div>
+            <button class="btn small ghost" onclick="window.cashierScanner.clearTicket()">Svuota</button>
+          </div>
+
+          <div id="ticket-empty-state" style="padding: 28px 16px; text-align: center;">
+            <p class="muted small" style="margin: 0;">Nessun prodotto ancora sul nastro. Scansiona in sequenza continua!</p>
+          </div>
+
+          <div id="cashier-ticket-list" class="receipt-tape"></div>
+
+          <div id="ticket-footer" class="receipt-foot" style="display: none;">
+            <div>
+              <span id="ticket-total-count" class="muted small">0 articoli</span>
+              <div id="ticket-total-price" class="receipt-total-val">0,00 €</div>
+            </div>
+            <button id="cashier-confirm-btn" class="btn primary" onclick="window.cashierScanner.submitTicket()">
+              Salva in Dispensa
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 3: SHOPPING LIST & EXPENSES TRACKER                       -->
+    <!-- ============================================================== -->
+    <section id="view-shopping" class="view-section">
+      <div style="margin: 4px 0 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+        <div>
+          <h2 class="serif">Spesa & Budget</h2>
+          <p class="lead">Lista intelligente e monitoraggio dei costi.</p>
+        </div>
+        <button class="btn small primary" onclick="window.shoppingManager.openManualExpenseModal()">
+          🧾 + Scontrino
+        </button>
+      </div>
+
+      <!-- Riepilogo Mensile jp27-trip Spese -->
+      <div class="gpills">
+        <div class="gpill ok">
+          <span>Speso questo mese:</span>
+          <b id="expense-month-total">0,00 €</b>
+        </div>
+        <div class="gpill">
+          <span>Spese:</span>
+          <b id="expense-trip-count">0</b>
+        </div>
+        <div class="gpill">
+          <span>Media spesa:</span>
+          <b id="expense-avg-amount">0,00 €</b>
+        </div>
+      </div>
+
+      <!-- Input Rapido Aggiunta Articolo -->
+      <div class="card" style="padding: 12px 14px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <input type="text" id="quick-add-input" placeholder="Cosa devi comprare? (es. Caffè, Latte...)" style="flex: 2; min-width: 170px;" onkeypress="if(event.key==='Enter') window.shoppingManager.quickAddItem()">
+          <select id="quick-add-category" style="flex: 1; min-width: 130px;">
+            <option value="Pasta & Cereali">Pasta & Cereali</option>
+            <option value="Conserve & Sughi">Conserve</option>
+            <option value="Freschi & Latticini">Freschi</option>
+            <option value="Surgelati">Surgelati</option>
+            <option value="Snack & Dolci">Snack & Dolci</option>
+            <option value="Bevande">Bevande</option>
+            <option value="Condimenti & Spezie">Condimenti</option>
+            <option value="Igiene & Casa">Igiene / Casa</option>
+            <option value="Altro" selected>Altro</option>
+          </select>
+          <button class="btn primary" onclick="window.shoppingManager.quickAddItem()">+ Aggiungi</button>
+        </div>
+
+        <!-- Suggerimenti Dispensa Sotto Scorta -->
+        <div id="pantry-low-suggestions" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); display: none;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--gold); margin-bottom: 6px;">
+            💡 Consigliati dalla dispensa (finiti o sotto scorta):
+          </div>
+          <div id="suggestions-pills" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+        </div>
+      </div>
+
+      <!-- Lista della Spesa -->
+      <div class="card" style="padding: 14px 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="margin: 0;">Lista della Spesa</h3>
+          <button class="btn small ghost" onclick="window.shoppingManager.clearCompleted()">Pulisci spuntati</button>
+        </div>
+
+        <div id="shopping-empty-state" style="padding: 20px; text-align: center;">
+          <p class="muted small" style="margin: 0;">La tua lista della spesa è vuota!</p>
+        </div>
+
+        <div id="shopping-items-list"></div>
+
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <div id="shop-total-count" class="muted small">0 articoli</div>
+            <strong id="shop-total-price" style="font-size: 1.05rem;">Previsto: 0,00 €</strong>
+          </div>
+          <button id="btn-checkout-shopping" class="btn primary" onclick="window.shoppingManager.openCheckoutModal()">
+            🎉 Ho Fatto la Spesa! (Carica in Dispensa)
+          </button>
+        </div>
+      </div>
+
+      <!-- Storico Scontrini -->
+      <div style="margin-top: 24px;">
+        <h3 class="serif" style="margin-bottom: 10px;">Storico Spese & Scontrini</h3>
+        <div id="expenses-empty-state" class="card" style="display: none; padding: 20px; text-align: center;">
+          <p class="muted small" style="margin: 0;">Nessuna spesa ancora registrata.</p>
+        </div>
+        <div id="expenses-history-list"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 4: SETTINGS & BACKUP (IMPOSTAZIONI)                       -->
+    <!-- ============================================================== -->
+    <section id="view-settings" class="view-section">
+      <div style="margin: 4px 0 16px;">
+        <h2 class="serif">Opzioni & Backup</h2>
+        <p class="lead">Personalizzazione tema, audio e backup dati.</p>
+      </div>
+
+      <!-- Tema e Aspetto -->
+      <div class="card">
+        <h3 style="margin-top: 0;">🎨 Aspetto & Tema</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+          <div>
+            <strong>Tema Grafico</strong>
+            <div class="muted small">Chiaro (Wabi-Sabi), Scuro (Sumi) o Automatico</div>
+          </div>
+          <select id="setting-theme-select" style="max-width: 150px; min-height: 40px; font-size: 0.85rem;" onchange="changeThemeChoice(this.value)">
+            <option value="auto">🌓 Sistema</option>
+            <option value="light">☀️ Chiaro</option>
+            <option value="dark">🌙 Scuro</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Audio Cassa -->
+      <div class="card">
+        <h3 style="margin-top: 0;">🔊 Feedback Cassa</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line);">
+          <div>
+            <strong>Disattiva Audio (Muto)</strong>
+            <div class="muted small">Disattiva i bip da scanner supermercato</div>
+          </div>
+          <input type="checkbox" id="setting-mute-sound" style="width: 24px; height: 24px; accent-color: var(--shu);">
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0 4px;">
+          <div>
+            <strong>Volume Segnale Acustico</strong>
+            <div class="muted small">Intensità del bip alla scansione</div>
+          </div>
+          <input type="range" id="setting-volume" min="0" max="1" step="0.1" value="0.7" style="accent-color: var(--shu);">
+        </div>
+      </div>
+
+      <!-- Backup JSON -->
+      <div class="card">
+        <h3 style="margin-top: 0;">💾 Dati & Salvataggio</h3>
+        <p class="muted small" style="margin-bottom: 14px;">
+          Tutti i dati sono memorizzati in IndexedDB sul tuo browser e rimangono disponibili anche offline.
+        </p>
+        <div class="btns">
+          <button id="btn-export-data" class="btn">📥 Scarica Backup JSON</button>
+          <label class="btn" style="cursor: pointer;">
+            📤 Ripristina
+            <input type="file" id="input-import-data" accept=".json" style="display: none;">
+          </label>
+          <button id="btn-reset-db" class="btn ghost" style="color: var(--shu);">🔄 Dati di Esempio</button>
+        </div>
+      </div>
+
+      <!-- PWA Status -->
+      <div class="card">
+        <h3 style="margin-top: 0;">📱 Progressive Web App</h3>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.88rem;">
+          <span class="muted">Service Worker:</span>
+          <span class="pill ok">Attivo (Offline First)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.88rem;">
+          <span class="muted">Storage:</span>
+          <strong>IndexedDB</strong>
+        </div>
+        <div style="margin-top: 14px;">
+          <button class="btn primary" style="width: 100%;" onclick="window.pwaManager.promptInstall()">
+            📲 Installa App sul Dispositivo
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- MODALS (Fogli Scorrevoli dal Basso .sheet da jp27-trip)        -->
+  <!-- ============================================================== -->
+
+  <!-- Modal 1: Aggiungi / Modifica Alimento -->
+  <div id="modal-item" class="sheet" hidden>
+    <div class="sheet-bg" onclick="window.pantryManager.closeModal()"></div>
+    <div class="sheet-card" role="dialog" aria-modal="true">
+      <div class="sheet-top">
+        <div class="grab" aria-hidden="true"></div>
+        <button class="sheet-x" onclick="window.pantryManager.closeModal()" aria-label="Chiudi">✕</button>
+      </div>
+      <div class="sheet-body">
+        <h2 class="serif" id="modal-title" style="margin: 0 0 10px;">Nuovo Alimento</h2>
+        <input type="hidden" id="form-pantry-id">
+
+        <div>
+          <label class="muted small">Codice a Barre / QR Code (opzionale)</label>
+          <input type="text" id="form-barcode" placeholder="es. 8076809513753">
+        </div>
+
+        <div>
+          <label class="muted small">Nome Alimento *</label>
+          <input type="text" id="form-name" placeholder="es. Spaghetti n.5" required>
+        </div>
+
+        <div>
+          <label class="muted small">Marca / Produttore</label>
+          <input type="text" id="form-brand" placeholder="es. Barilla">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label class="muted small">Categoria</label>
+            <select id="form-category">
+              <option value="Pasta & Cereali">Pasta & Cereali</option>
+              <option value="Conserve & Sughi">Conserve & Sughi</option>
+              <option value="Freschi & Latticini">Freschi & Latticini</option>
+              <option value="Surgelati">Surgelati</option>
+              <option value="Snack & Dolci">Snack & Dolci</option>
+              <option value="Bevande">Bevande</option>
+              <option value="Condimenti & Spezie">Condimenti</option>
+              <option value="Igiene & Casa">Igiene / Casa</option>
+              <option value="Altro">Altro</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted small">Luogo</label>
+            <select id="form-location">
+              <option value="Dispensa">Dispensa</option>
+              <option value="Frigo">Frigo</option>
+              <option value="Freezer">Freezer</option>
+              <option value="Cantina">Cantina</option>
+              <option value="Ripostiglio">Ripostiglio</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label class="muted small">Quantità</label>
+            <input type="number" id="form-qty" value="1" min="0" step="1">
+          </div>
+          <div>
+            <label class="muted small">Unità</label>
+            <select id="form-unit">
+              <option value="pz">Pezzi (pz)</option>
+              <option value="kg">Chilogrammi (kg)</option>
+              <option value="g">Grammi (g)</option>
+              <option value="L">Litri (L)</option>
+              <option value="ml">Millilitri (ml)</option>
+              <option value="bottiglie">Bottiglie</option>
+              <option value="scatole">Scatole</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label class="muted small">Scorta Minima</label>
+            <input type="number" id="form-min-qty" value="1" min="0" step="1">
+          </div>
+          <div>
+            <label class="muted small">Prezzo Unitario (€)</label>
+            <input type="number" id="form-price" value="1.50" step="0.05" min="0">
+          </div>
+        </div>
+
+        <div>
+          <label class="muted small">Data di Scadenza</label>
+          <input type="date" id="form-expiry">
+        </div>
+
+        <div>
+          <label class="muted small">Note</label>
+          <input type="text" id="form-notes" placeholder="Note facoltative...">
+        </div>
+
+        <div class="btns" style="margin-top: 14px;">
+          <button class="btn ghost" onclick="window.pantryManager.closeModal()">Annulla</button>
+          <button class="btn primary" onclick="window.pantryManager.saveFromModal()">Salva Alimento</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Finalizza Spesa -->
+  <div id="modal-checkout-spesa" class="sheet" hidden>
+    <div class="sheet-bg" onclick="window.shoppingManager.closeCheckoutModal()"></div>
+    <div class="sheet-card" role="dialog" aria-modal="true">
+      <div class="sheet-top">
+        <div class="grab" aria-hidden="true"></div>
+        <button class="sheet-x" onclick="window.shoppingManager.closeCheckoutModal()">✕</button>
+      </div>
+      <div class="sheet-body">
+        <h2 class="serif" style="margin: 0 0 4px;">🎉 Carica in Dispensa</h2>
+        <p id="checkout-items-summary" style="color: var(--shu); font-weight: 700; margin: 0 0 12px;"></p>
+
+        <div>
+          <label class="muted small">Supermercato / Negozio</label>
+          <input type="text" id="checkout-store-name" value="Supermercato">
+        </div>
+
+        <div>
+          <label class="muted small">Totale Speso dallo Scontrino (€)</label>
+          <input type="number" id="checkout-total-amount" step="0.01" min="0">
+        </div>
+
+        <div>
+          <label class="muted small">Data Spesa</label>
+          <input type="date" id="checkout-date">
+        </div>
+
+        <div class="btns" style="margin-top: 14px;">
+          <button class="btn ghost" onclick="window.shoppingManager.closeCheckoutModal()">Annulla</button>
+          <button class="btn primary" onclick="window.shoppingManager.confirmCheckout()">Conferma Carico</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Registra Scontrino Manuale -->
+  <div id="modal-manual-expense" class="sheet" hidden>
+    <div class="sheet-bg" onclick="window.shoppingManager.closeManualExpenseModal()"></div>
+    <div class="sheet-card" role="dialog" aria-modal="true">
+      <div class="sheet-top">
+        <div class="grab" aria-hidden="true"></div>
+        <button class="sheet-x" onclick="window.shoppingManager.closeManualExpenseModal()">✕</button>
+      </div>
+      <div class="sheet-body">
+        <h2 class="serif" style="margin: 0 0 10px;">🧾 Registra Spesa</h2>
+
+        <div>
+          <label class="muted small">Supermercato *</label>
+          <input type="text" id="manual-exp-store" placeholder="es. Esselunga, Coop, Conad...">
+        </div>
+
+        <div>
+          <label class="muted small">Totale Speso (€) *</label>
+          <input type="number" id="manual-exp-amount" placeholder="es. 45.80" step="0.01" min="0">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label class="muted small">Data Scontrino</label>
+            <input type="date" id="manual-exp-date">
+          </div>
+          <div>
+            <label class="muted small">N° Articoli</label>
+            <input type="number" id="manual-exp-items" placeholder="12" min="1">
+          </div>
+        </div>
+
+        <div>
+          <label class="muted small">Note</label>
+          <input type="text" id="manual-exp-notes" placeholder="Spesa settimanale...">
+        </div>
+
+        <div class="btns" style="margin-top: 14px;">
+          <button class="btn ghost" onclick="window.shoppingManager.closeManualExpenseModal()">Annulla</button>
+          <button class="btn primary" onclick="window.shoppingManager.saveManualExpense()">Salva Scontrino</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Bottom Navigation Bar Floating Glass (.tabs da jp27-trip) -->
+  <nav class="tabs" id="tabs">
+    <a href="#pantry" class="tab-link on" data-view="pantry">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+      </svg>
+      <span>Dispensa</span>
+    </a>
+
+    <a href="#cashier" class="tab-link" data-view="cashier">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+        <path d="M7 8h10M7 12h6M7 16h10"></path>
+      </svg>
+      <span>Cassa</span>
+    </a>
+
+    <a href="#shopping" class="tab-link" data-view="shopping">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle>
+        <circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      </svg>
+      <span>Spesa</span>
+    </a>
+
+    <a href="#settings" class="tab-link" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Opzioni</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="lib/html5-qrcode.min.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/scanner.js"></script>
+  <script src="js/pantry.js"></script>
+  <script src="js/shopping.js"></script>
+  <script src="js/pwa.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    function setCategoryFilter(cat, btn) {
+      document.querySelectorAll('#category-pills .chip').forEach(p => p.classList.remove('on'));
+      btn.classList.add('on');
+      window.pantryManager.setFilterCategory(cat);
+    }
+
+    function setCashierMode(mode, btn) {
+      document.querySelectorAll('.mode-seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window.cashierScanner.setMode(mode);
+    }
+
+    function toggleAppTheme() {
+      const cur = document.documentElement.dataset.theme;
+      let next = 'dark';
+      if (cur === 'dark') next = 'light';
+      else if (cur === 'light') next = '';
+      else next = 'dark';
+
+      if (next) {
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem("dispensa:theme", JSON.stringify(next));
+      } else {
+        delete document.documentElement.dataset.theme;
+        localStorage.removeItem("dispensa:theme");
+      }
+      const select = document.getElementById('setting-theme-select');
+      if (select) select.value = next || 'auto';
+    }
+
+    function changeThemeChoice(val) {
+      if (val === 'auto') {
+        delete document.documentElement.dataset.theme;
+        localStorage.removeItem("dispensa:theme");
+      } else {
+        document.documentElement.dataset.theme = val;
+        localStorage.setItem("dispensa:theme", JSON.stringify(val));
+      }
+    }
+  </script>
+</body>
+</html>

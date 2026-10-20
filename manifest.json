@@ -1,0 +1,48 @@
+{
+  "name": "Dispensa & Cassa Smart",
+  "short_name": "Dispensa",
+  "description": "Gestione intelligente della dispensa, monitoraggio spesa e scanner cassa continuo per QR code e codici a barre.",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f1ea",
+  "theme_color": "#f5f1ea",
+  "dir": "ltr",
+  "lang": "it",
+  "categories": ["food", "shopping", "productivity", "utilities"],
+  "icons": [
+    { "src": "icons/icon-72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "icons/icon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "icons/icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "icons/icon-152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cassa Supermercato",
+      "short_name": "Cassa",
+      "description": "Avvia lo scanner rapido continuo stile cassa",
+      "url": "./index.html?view=cashier&source=shortcut",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Lista della Spesa",
+      "short_name": "Spesa",
+      "description": "Vedi cosa comprare e budget spesa",
+      "url": "./index.html?view=shopping&source=shortcut",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "La Mia Dispensa",
+      "short_name": "Dispensa",
+      "description": "Controlla scorte e scadenze",
+      "url": "./index.html?view=pantry&source=shortcut",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}

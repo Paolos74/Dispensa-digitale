@@ -1,0 +1,1190 @@
+/* ==========================================================================
+   Dispensa & Cassa Smart - Design System ispirato a jp27-trip
+   Palette Wabi-Sabi, Vermiglio Torii (--shu), Inchiostro Sumi (--ink),
+   Vetro Floating Glass (--glass), Schede iOS e Tipografia Plus Jakarta Sans
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Shippori+Mincho:wght@800&display=swap');
+
+/* --- Tokens Principali (jp27-trip) --- */
+:root {
+  --bg: #f5f1ea;
+  --bg-2: #ece6db;
+  --card: #ffffff;
+  --card-2: #faf7f2;
+  --ink: #1c1915;
+  --ink-2: #4a443c;
+  --muted: #857b6e;
+  --line: rgba(60, 45, 25, 0.10);
+  
+  /* Accenti Giapponesi */
+  --shu: #d4442f;          /* Rosso Vermiglio Torii */
+  --shu-2: #ef6a4f;
+  --shu-soft: rgba(212, 68, 47, 0.10);
+  --ai: #2b4c7e;           /* Blu Indigo / Ai-iro */
+  --gold: #c89b3c;
+  --ok: #4f8a3c;           /* Verde Matcha */
+  --ok-soft: rgba(79, 138, 60, 0.12);
+  --warn-bg: #fdf0d5;
+  --warn-fg: #8a5a00;
+  --danger-bg: rgba(212, 68, 47, 0.12);
+  --danger-fg: #d4442f;
+
+  --glass: rgba(255, 255, 255, 0.78);
+  --shadow-s: 0 1px 2px rgba(40, 25, 10, 0.05), 0 2px 8px rgba(40, 25, 10, 0.05);
+  --shadow: 0 2px 6px rgba(40, 25, 10, 0.05), 0 12px 32px rgba(40, 25, 10, 0.08);
+  --shadow-l: 0 10px 40px rgba(40, 25, 10, 0.18);
+  
+  --r: 20px;
+  --r-s: 14px;
+  --nav-h: 66px;
+  --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --serif: "Shippori Mincho", "Hiragino Mincho ProN", Georgia, serif;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  color-scheme: light;
+}
+
+/* Modalità Scura (Automatica da sistema o forzata con data-theme="dark") */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e0d0c;
+    --bg-2: #171512;
+    --card: #1a1815;
+    --card-2: #22201b;
+    --ink: #f4efe7;
+    --ink-2: #d2cabd;
+    --muted: #958b7d;
+    --line: rgba(255, 240, 220, 0.09);
+    --shu: #f0644c;
+    --shu-2: #ff8a6b;
+    --shu-soft: rgba(240, 100, 76, 0.14);
+    --ai: #8fb3e8;
+    --gold: #e0b75a;
+    --ok: #8cc36a;
+    --ok-soft: rgba(140, 195, 106, 0.15);
+    --warn-bg: rgba(224, 183, 90, 0.14);
+    --warn-fg: #e9c06a;
+    --danger-bg: rgba(240, 100, 76, 0.18);
+    --danger-fg: #ff7d66;
+    --glass: rgba(26, 24, 21, 0.78);
+    --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
+    --shadow-l: 0 10px 40px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e0d0c;
+  --bg-2: #171512;
+  --card: #1a1815;
+  --card-2: #22201b;
+  --ink: #f4efe7;
+  --ink-2: #d2cabd;
+  --muted: #958b7d;
+  --line: rgba(255, 240, 220, 0.09);
+  --shu: #f0644c;
+  --shu-2: #ff8a6b;
+  --shu-soft: rgba(240, 100, 76, 0.14);
+  --ai: #8fb3e8;
+  --gold: #e0b75a;
+  --ok: #8cc36a;
+  --ok-soft: rgba(140, 195, 106, 0.15);
+  --warn-bg: rgba(224, 183, 90, 0.14);
+  --warn-fg: #e9c06a;
+  --danger-bg: rgba(240, 100, 76, 0.18);
+  --danger-fg: #ff7d66;
+  --glass: rgba(26, 24, 21, 0.78);
+  --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
+  --shadow-l: 0 10px 40px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+/* --- Base & Reset App-Like --- */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow-x: hidden;
+  touch-action: pan-x pan-y;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  padding-bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom));
+}
+
+img, a {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Typography jp27-trip */
+h1, h2, h3, h4 {
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+h2 {
+  font-size: 1.65rem;
+  font-weight: 800;
+  margin: 4px 0 6px;
+  line-height: 1.2;
+}
+
+h3 {
+  font-size: 1.08rem;
+  font-weight: 700;
+  margin: 20px 0 10px;
+}
+
+.serif {
+  font-family: var(--serif);
+  font-weight: 800;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.lead {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+/* ==========================================================================
+   Header da App iPhone (jp27-trip .top)
+   ========================================================================== */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: calc(46px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 16px 0;
+  background: var(--bg);
+  border-bottom: 0.5px solid var(--line);
+  transition: border-color 0.2s, background-color 0.3s;
+}
+
+.tb-l {
+  justify-self: start;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tbdate {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.ctitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.tb-r {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Pulsante circolare vermiglio per Nuova Aggiunta (.tbplus) */
+.tbplus {
+  width: 36px;
+  height: 36px;
+  border-radius: 99px;
+  border: 0;
+  background: var(--shu);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--shu) 60%, transparent);
+  cursor: pointer;
+  transition: transform 0.15s var(--ease);
+}
+.tbplus:active {
+  transform: scale(0.92);
+}
+
+.round {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-s);
+  transition: transform 0.15s, background 0.2s;
+}
+.round:active {
+  transform: scale(0.92);
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  display: inline-block;
+  transition: all 0.3s;
+}
+.sync-dot.on {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent);
+}
+.sync-dot.offline {
+  background: var(--shu);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--shu) 25%, transparent);
+}
+
+/* ==========================================================================
+   Contenitore Principale
+   ========================================================================== */
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 16px 16px 28px;
+}
+
+.view-section {
+  display: none;
+  animation: viewFade 0.2s var(--ease);
+}
+.view-section.active {
+  display: block;
+}
+
+@keyframes viewFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Banners (PWA install, aggiornamento) */
+.pwa-banner-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-s);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+.pwa-banner-card.install {
+  border-left: 4px solid var(--shu);
+}
+.pwa-banner-card.update {
+  border-left: 4px solid var(--ai);
+}
+
+/* ==========================================================================
+   Card e Pillole (.card, .gpills, .gpill, .pill)
+   ========================================================================== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px;
+  box-shadow: var(--shadow-s);
+  margin-bottom: 14px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Gruppo di pillole statistiche (.gpills & .gpill da jp27-trip) */
+.gpills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.gpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 99px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-s);
+  font-weight: 700;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.gpill b {
+  font-size: 1.05rem;
+}
+
+.gpill.ok {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: transparent;
+}
+.gpill.warn {
+  color: var(--warn-fg);
+  background: var(--warn-bg);
+  border-color: transparent;
+}
+.gpill.danger {
+  color: var(--danger-fg);
+  background: var(--danger-bg);
+  border-color: transparent;
+}
+
+/* Badge / Pillole di stato */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: var(--card-2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.pill.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: transparent;
+}
+.pill.warn {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  border-color: transparent;
+}
+.pill.danger {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  border-color: transparent;
+}
+.pill.shu {
+  background: var(--shu-soft);
+  color: var(--shu);
+  border-color: transparent;
+}
+.pill.ghost {
+  background: var(--card-2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+/* ==========================================================================
+   Pulsanti (.btn, .btn.primary, .btn.dark, .btn.pressed)
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 18px;
+  min-height: 46px;
+  border-radius: var(--r-s);
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-decoration: none;
+  color: var(--ink);
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+}
+
+.btn:active, .btn.pressed {
+  transform: scale(0.97);
+}
+
+/* Pulsante primario in gradiente Vermiglio Torii */
+.btn.primary {
+  background: linear-gradient(135deg, var(--shu-2), var(--shu));
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(212, 68, 47, 0.32);
+}
+
+.btn.dark {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: transparent;
+}
+
+.btn.small {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border-radius: 10px;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.btns .btn {
+  flex: 1 1 0;
+}
+
+/* ==========================================================================
+   Chip Orizzontali (.chips, .chip, .chip.on)
+   ========================================================================== */
+.chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0 10px;
+  margin: 0;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+}
+
+.chip.on {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: transparent;
+}
+
+/* Barra di Ricerca con icona */
+.searchbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.searchbox svg {
+  position: absolute;
+  left: 14px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.searchbox input {
+  width: 100%;
+  padding-left: 42px !important;
+}
+
+/* ==========================================================================
+   Campi Form (Stile jp27-trip: 16px font per evitare zoom su iPhone)
+   ========================================================================== */
+:where(input:not([type=checkbox]):not([type=radio]), select, textarea) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  min-height: 48px;
+  box-shadow: var(--shadow-s);
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+  outline: none;
+}
+
+:where(input, textarea):focus, :where(select):focus {
+  border-color: var(--shu);
+}
+
+:where(input, textarea)::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+:where(select) {
+  padding-right: 38px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%23857b6e' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+/* ==========================================================================
+   Griglia Alimenti Dispensa (.pantry-card)
+   ========================================================================== */
+.pantry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.pantry-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: var(--shadow-s);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s;
+}
+
+.pantry-card:active {
+  transform: scale(0.985);
+}
+
+.pantry-card.card-warning {
+  border-left: 4px solid var(--gold);
+}
+
+.pantry-card.card-expired {
+  border-left: 4px solid var(--shu);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-loc-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.card-prod-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.card-prod-brand {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.card-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.card-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+/* Regolatore Quantità */
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 2px;
+}
+
+.btn-step {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: none;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-s);
+}
+.btn-step:active {
+  transform: scale(0.92);
+}
+
+.qty-val {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.qty-val small {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   CASSA SUPERMERCATO (Scanner a Nastro Continuo)
+   ========================================================================== */
+.cashier-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Selettore Modalità Cassa */
+.mode-segmented {
+  display: flex;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.mode-seg-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 13px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  text-align: center;
+}
+
+.mode-seg-btn.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-s);
+}
+
+/* Viewfinder Fotocamera */
+.camera-container {
+  position: relative;
+  background: #000;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  min-height: 240px;
+}
+
+#qr-reader {
+  width: 100% !important;
+  border: none !important;
+}
+
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Mirino Laser Vermiglio */
+.scanner-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.scanner-frame {
+  position: absolute;
+  top: 18%;
+  left: 8%;
+  right: 8%;
+  height: 60%;
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);
+}
+
+.scanner-red-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--shu), #ff9a85, var(--shu), transparent);
+  box-shadow: 0 0 10px var(--shu), 0 0 20px var(--shu);
+  animation: laserSweep 2s ease-in-out infinite alternate;
+}
+
+.scanner-red-laser.flash {
+  background: #fff !important;
+  box-shadow: 0 0 24px #fff, 0 0 40px var(--shu) !important;
+  height: 6px !important;
+}
+
+@keyframes laserSweep {
+  0% { top: 5%; }
+  100% { top: 95%; }
+}
+
+.cam-controls-top {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.cam-pill-status {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(14, 13, 12, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  color: #f4efe7;
+  text-align: center;
+  z-index: 10;
+}
+
+/* Simulatore rapido barcode */
+.sim-drawer {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-s);
+}
+
+.sim-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.sim-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Nastro Cassa Supermercato (Receipt Slip) */
+.receipt-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.receipt-head {
+  background: var(--card-2);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.receipt-tape {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.receipt-row {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s var(--ease);
+}
+
+.receipt-row.just-scanned {
+  background: var(--shu-soft);
+  border-color: var(--shu);
+  transform: scale(1.02);
+}
+
+.receipt-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.receipt-sub {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.receipt-price {
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.receipt-foot {
+  background: var(--card-2);
+  border-top: 1px solid var(--line);
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.receipt-total-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--shu);
+}
+
+/* ==========================================================================
+   LISTA SPESA & TRACKING SPESE
+   ========================================================================== */
+.shop-item-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-s);
+  transition: opacity 0.2s;
+}
+
+.shop-item-card.is-checked {
+  opacity: 0.55;
+  background: var(--card-2);
+}
+
+.shop-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.shop-title.strikethrough {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+/* Checkbox stile iOS */
+.ios-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+  transition: all 0.2s var(--ease);
+}
+.ios-check.checked {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #fff;
+}
+
+/* Storico Scontrini */
+.expense-slip-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-s);
+}
+
+.expense-slip-amount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   Modale a Foglio Scorrevole (.sheet, .sheet-card, .grab da jp27-trip)
+   ========================================================================== */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: end center;
+  touch-action: none;
+}
+
+.sheet-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(14, 13, 12, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: bgFade 0.25s var(--ease);
+}
+
+.sheet-card {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 28px 28px 0 0;
+  box-shadow: var(--shadow-l);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: sheetUp 0.3s var(--ease);
+}
+
+@keyframes bgFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-top {
+  position: relative;
+  padding: 12px 16px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grab {
+  width: 38px;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--line);
+}
+
+.sheet-x {
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 99px;
+  border: 0;
+  background: var(--card-2);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.sheet-body {
+  padding: 12px 20px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ==========================================================================
+   Bottom Nav Bar Floating Glass (.tabs da jp27-trip)
+   ========================================================================== */
+.tabs {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  z-index: 40;
+  max-width: 520px;
+  margin: 0 auto;
+  height: var(--nav-h);
+  display: flex;
+  padding: 6px;
+  gap: 2px;
+  background: var(--glass);
+  backdrop-filter: saturate(1.8) blur(22px);
+  -webkit-backdrop-filter: saturate(1.8) blur(22px);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow-l);
+  touch-action: none;
+}
+
+.tabs .tab-link {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s var(--ease), background 0.2s;
+}
+
+.tabs .tab-link svg {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.3s var(--ease);
+}
+
+.tabs .tab-link.on {
+  color: var(--shu);
+  background: var(--shu-soft);
+}
+
+.tabs .tab-link.on svg {
+  transform: translateY(-1px) scale(1.08);
+}
+
+/* ==========================================================================
+   Toast Notifiche (.toast)
+   ========================================================================== */
+#toast-container {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 26px + env(safe-area-inset-bottom));
+  left: 16px;
+  right: 16px;
+  max-width: 440px;
+  margin: 0 auto;
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast-notification {
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 18px;
+  padding: 12px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-l);
+  transform: translateY(16px);
+  opacity: 0;
+  transition: all 0.25s var(--ease);
+}
+
+.toast-notification.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Nutriscore badges */
+.nutriscore-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #fff;
+  vertical-align: middle;
+}
+.nutriscore-a { background: #038141; }
+.nutriscore-b { background: #85bb2f; }
+.nutriscore-c { background: #fecb02; color: #000; }
+.nutriscore-d { background: #ee8100; }
+.nutriscore-e { background: #e63e11; }
